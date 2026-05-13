@@ -281,6 +281,9 @@
       min-height: 16px;
     }
 
+    #aiFields, #templateSection { transition: opacity 0.2s; }
+    #aiFields.hidden, #templateSection.hidden { display: none; }
+
     .indicator {
       display: inline-block;
       width: 7px; height: 7px;
@@ -391,9 +394,27 @@
         <button class="btn btn-stop" id="stopBotBtn" disabled>&#9632; Stop</button>
       </div>
 
-      <!-- Template -->
+      <!-- AI Settings -->
       <div>
-        <label class="field-label">Message Template</label>
+        <div class="section-title">AI Message Generation</div>
+        <div class="toggle-row" style="margin-bottom:8px">
+          <input type="checkbox" id="useAI" checked />
+          <label for="useAI">Generate personalized messages with Claude AI</label>
+        </div>
+        <div id="aiFields">
+          <label class="field-label">Claude API Key</label>
+          <div style="display:flex;gap:6px;margin-bottom:5px">
+            <input type="password" class="num-input" id="claudeApiKey" placeholder="sk-ant-api03-…" style="flex:1" />
+          </div>
+          <p class="hint-text" style="margin-bottom:8px">Get a key at <strong>console.anthropic.com</strong> — stored locally, never sent anywhere but Anthropic.</p>
+          <label class="field-label">AI Instructions (system prompt)</label>
+          <textarea class="template-input" id="aiInstructions" style="height:80px">You write short, personalized LinkedIn outreach messages for CableNOI. We help multifamily apartment owners increase their NOI through bulk cable & internet agreements at zero cost to them. Messages must be under 120 words, conversational, reference the person's role/company, and end with a clear but soft call to action. Never say "I hope this finds you well."</textarea>
+        </div>
+      </div>
+
+      <!-- Fallback Template -->
+      <div id="templateSection">
+        <label class="field-label">Fallback Template <span style="color:#475569;font-weight:400">(used when no API key)</span></label>
         <textarea class="template-input" id="templateInput">Hi {{name}}, I came across your work in multifamily real estate and wanted to reach out. I work with CableNOI — we help apartment owners boost their NOI through bulk cable &amp; internet agreements at no cost to you. Would love to connect and see if there's an opportunity for your portfolio.</textarea>
         <p class="hint-text">Variables: <code>{{name}}</code> <code>{{fullname}}</code> <code>{{company}}</code> <code>{{title}}</code></p>
       </div>

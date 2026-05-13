@@ -161,12 +161,21 @@ const minDelayInput = document.getElementById("minDelay");
 const maxDelayInput = document.getElementById("maxDelay");
 const dailyLimitInput = document.getElementById("dailyLimit");
 const relevantOnlyCheck = document.getElementById("relevantOnly");
+const useAICheck = document.getElementById("useAI");
+const claudeApiKeyInput = document.getElementById("claudeApiKey");
+const aiInstructionsInput = document.getElementById("aiInstructions");
 const botIndicator = document.getElementById("botIndicator");
 const botStatusVal = document.getElementById("botStatusVal");
 const botSentToday = document.getElementById("botSentToday");
 const botTotalSent = document.getElementById("botTotalSent");
 const botStatusText = document.getElementById("botStatusText");
 const logBox = document.getElementById("logBox");
+
+// Toggle AI fields visibility
+useAICheck.addEventListener("change", () => {
+  document.getElementById("aiFields").classList.toggle("hidden", !useAICheck.checked);
+  document.getElementById("templateSection").classList.toggle("hidden", useAICheck.checked);
+});
 
 // Load persisted settings
 chrome.storage.local.get(["botSettings", "botState"], ({ botSettings, botState }) => {
@@ -176,6 +185,12 @@ chrome.storage.local.get(["botSettings", "botState"], ({ botSettings, botState }
     maxDelayInput.value = botSettings.maxDelay ?? 5;
     dailyLimitInput.value = botSettings.dailyLimit ?? 20;
     relevantOnlyCheck.checked = botSettings.relevantOnly ?? true;
+    useAICheck.checked = botSettings.useAI ?? true;
+    claudeApiKeyInput.value = botSettings.claudeApiKey || "";
+    if (botSettings.aiInstructions) aiInstructionsInput.value = botSettings.aiInstructions;
+    // Sync visibility
+    document.getElementById("aiFields").classList.toggle("hidden", !useAICheck.checked);
+    document.getElementById("templateSection").classList.toggle("hidden", useAICheck.checked);
   }
   if (botState) applyBotState(botState);
 });
@@ -197,8 +212,12 @@ startBotBtn.addEventListener("click", () => {
     alert("Min delay must be less than max delay.");
     return;
   }
+  if (useAICheck.checked && !claudeApiKeyInput.value.trim()) {
+    alert("Enter a Claude API key to use AI generation, or uncheck the AI option to use the fallback template.");
+    return;
+  }
   const template = templateInput.value.trim();
-  if (!template) {
+  if (!useAICheck.checked && !template) {
     alert("Message template cannot be empty.");
     return;
   }
@@ -208,6 +227,9 @@ startBotBtn.addEventListener("click", () => {
     maxDelay: maxD,
     dailyLimit: parseInt(dailyLimitInput.value) || 20,
     relevantOnly: relevantOnlyCheck.checked,
+    useAI: useAICheck.checked,
+    claudeApiKey: claudeApiKeyInput.value.trim(),
+    aiInstructions: aiInstructionsInput.value.trim(),
   };
   chrome.runtime.sendMessage({ action: "startBot", settings });
 });

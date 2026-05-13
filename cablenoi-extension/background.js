@@ -45,6 +45,9 @@ async function getBotSettings() {
     maxDelay: 5,
     dailyLimit: 20,
     relevantOnly: true,
+    useAI: true,
+    claudeApiKey: "",
+    aiInstructions: "You write short, personalized LinkedIn outreach messages for CableNOI. We help multifamily apartment owners increase their NOI through bulk cable & internet agreements at zero cost to them. Messages must be under 120 words, conversational, reference the person's role/company, and end with a clear but soft call to action. Never say \"I hope this finds you well.\"",
   };
   const { botSettings = defaults } = await chrome.storage.local.get("botSettings");
   return { ...defaults, ...botSettings };
@@ -53,6 +56,54 @@ async function getBotSettings() {
 function addLog(state, entry) {
   const log = Array.isArray(state.log) ? state.log : [];
   return [`[${new Date().toLocaleTimeString()}] ${entry}`, ...log].slice(0, 60);
+}
+
+// ── AI message generation ─────────────────────────────────────────────────────
+
+async function generateMessage(lead, settings) {
+  const apiKey = settings.claudeApiKey;
+  const useAI = settings.useAI;
+
+  if (!useAI || !apiKey) {
+    return fillTemplate(settings.template, lead);
+  }
+
+  const first = (lead.name || "").split(" ")[0] || "there";
+  const userPrompt = [
+    `Write a LinkedIn outreach message to ${lead.name}`,
+    lead.title ? `who is a ${lead.title}` : "",
+    lead.company ? `at ${lead.company}` : "",
+    lead.location ? `based in ${lead.location}` : "",
+    `Start the message with "Hi ${first},"`,
+  ].filter(Boolean).join(", ") + ".";
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        system: settings.aiInstructions || "You write short LinkedIn outreach messages for CableNOI.",
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    return data.content?.[0]?.text?.trim() || fillTemplate(settings.template, lead);
+  } catch (err) {
+    console.warn("AI generation failed, using template:", err.message);
+    return fillTemplate(settings.template, lead);
+  }
 }
 
 // ── Template fill ─────────────────────────────────────────────────────────────
@@ -98,7 +149,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   await sleep(3000);
 
   const settings = await getBotSettings();
-  const message = fillTemplate(settings.template, state.currentLead);
+  await patchBotState({ status: `Generating message for ${state.currentLead?.name}…` });
+  const message = await generateMessage(state.currentLead, settings);
 
   try {
     await chrome.tabs.sendMessage(tabId, { action: "automateMessage", message });
