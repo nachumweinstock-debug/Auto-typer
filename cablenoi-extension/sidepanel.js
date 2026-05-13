@@ -1,44 +1,50 @@
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(`tab-${tab.dataset.tab}`).classList.add("active");
+  });
+});
+
+// ── Leads tab ─────────────────────────────────────────────────────────────────
+
 const scrapeBtn = document.getElementById("scrapeBtn");
 const exportBtn = document.getElementById("exportBtn");
 const clearBtn = document.getElementById("clearBtn");
 const searchInput = document.getElementById("searchInput");
 const mfOnly = document.getElementById("mfOnly");
+const hideMessaged = document.getElementById("hideMessaged");
 const leadsContainer = document.getElementById("leadsContainer");
-const statusEl = document.getElementById("status");
+const leadsStatus = document.getElementById("leadsStatus");
 const statsText = document.getElementById("statsText");
 
 let allLeads = [];
 
-// ── Load persisted leads on open ─────────────────────────────────────────────
-
 chrome.storage.local.get("leads", ({ leads = [] }) => {
   allLeads = leads;
-  render();
+  renderLeads();
 });
-
-// ── Message listener from background ─────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "updateLeads") {
     allLeads = msg.leads;
-    render();
-    setStatus(`Scraped ${msg.leads.length} total lead(s).`, "success");
+    renderLeads();
+    setLeadsStatus(`Scraped ${msg.leads.length} total lead(s).`, "success");
     scrapeBtn.disabled = false;
   }
-  if (msg.action === "scrapeProgress") {
-    setStatus(msg.text, "");
-  }
+  if (msg.action === "scrapeProgress") setLeadsStatus(msg.text, "");
   if (msg.action === "scrapeError") {
-    setStatus(msg.error, "error");
+    setLeadsStatus(msg.error, "error");
     scrapeBtn.disabled = false;
   }
 });
 
-// ── Controls ──────────────────────────────────────────────────────────────────
-
 scrapeBtn.addEventListener("click", () => {
   scrapeBtn.disabled = true;
-  setStatus("Sending scrape request…", "");
+  setLeadsStatus("Sending scrape request…", "");
   chrome.runtime.sendMessage({ action: "triggerScrape" });
 });
 
@@ -46,41 +52,36 @@ clearBtn.addEventListener("click", () => {
   if (!confirm("Clear all leads?")) return;
   allLeads = [];
   chrome.runtime.sendMessage({ action: "clearLeads" });
-  render();
-  setStatus("Leads cleared.", "");
+  renderLeads();
+  setLeadsStatus("Leads cleared.", "");
 });
 
 exportBtn.addEventListener("click", () => {
-  const visible = getFiltered();
+  const visible = getFilteredLeads();
   if (!visible.length) return;
-
-  const header = ["Name", "Title", "Company", "Location", "Profile URL", "Multifamily Match"];
+  const header = ["Name", "Title", "Company", "Location", "Profile URL", "MF Match", "Messaged"];
   const rows = visible.map((l) => [
-    csvEscape(l.name),
-    csvEscape(l.title),
-    csvEscape(l.company),
-    csvEscape(l.location),
-    csvEscape(l.profileUrl),
+    csvEscape(l.name), csvEscape(l.title), csvEscape(l.company),
+    csvEscape(l.location), csvEscape(l.profileUrl),
     l.relevant ? "Yes" : "No",
+    l.messaged ? "Yes" : "No",
   ]);
-
   const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `cablenoi_leads_${datestamp()}.csv`;
+  a.download = `cablenoi_leads_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 });
 
-searchInput.addEventListener("input", render);
-mfOnly.addEventListener("change", render);
+searchInput.addEventListener("input", renderLeads);
+mfOnly.addEventListener("change", renderLeads);
+hideMessaged.addEventListener("change", renderLeads);
 
-// ── Render ────────────────────────────────────────────────────────────────────
-
-function render() {
-  const visible = getFiltered();
+function renderLeads() {
+  const visible = getFilteredLeads();
   statsText.textContent = `${visible.length} / ${allLeads.length} leads`;
   exportBtn.disabled = visible.length === 0;
 
@@ -89,10 +90,12 @@ function render() {
       <div class="empty-state">
         <div class="icon">&#128270;</div>
         <p>${allLeads.length === 0
-          ? "Navigate to a LinkedIn search, profile, or company page and click <strong>Scrape This Page</strong>."
+          ? 'Go to a LinkedIn search and click <strong>Scrape Page</strong>.'
           : "No leads match your filters."
         }</p>
-        ${allLeads.length === 0 ? '<p class="hint">Tip: Run a LinkedIn People search filtered by title (e.g. "property owner") for best results.</p>' : ""}
+        ${allLeads.length === 0
+          ? '<p class="hint">Tip: search "multifamily property owner" in LinkedIn People.</p>'
+          : ""}
       </div>`;
     return;
   }
@@ -100,7 +103,10 @@ function render() {
   leadsContainer.innerHTML = "";
   visible.forEach((lead, idx) => {
     const card = document.createElement("div");
-    card.className = "lead-card" + (lead.relevant ? " relevant" : "");
+    const classes = ["lead-card"];
+    if (lead.relevant) classes.push("relevant");
+    if (lead.messaged) classes.push("messaged");
+    card.className = classes.join(" ");
     card.innerHTML = `
       <div class="lead-name">
         ${lead.profileUrl
@@ -112,53 +118,137 @@ function render() {
         ${lead.company ? `<span>&#127970; ${escapeHtml(lead.company)}</span>` : ""}
         ${lead.location ? `<span>&#128205; ${escapeHtml(lead.location)}</span>` : ""}
       </div>
-      <button class="delete-btn" data-idx="${idx}" title="Remove lead">&times;</button>`;
+      <button class="delete-btn" data-idx="${idx}" title="Remove">&times;</button>`;
     leadsContainer.appendChild(card);
   });
 
   leadsContainer.querySelectorAll(".delete-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const visIdx = parseInt(btn.dataset.idx);
-      const lead = visible[visIdx];
+      const lead = visible[parseInt(btn.dataset.idx)];
       allLeads = allLeads.filter((l) => l !== lead);
       chrome.storage.local.set({ leads: allLeads });
-      render();
+      renderLeads();
     });
   });
 }
 
-function getFiltered() {
+function getFilteredLeads() {
   const query = searchInput.value.toLowerCase().trim();
-  const mf = mfOnly.checked;
   return allLeads.filter((l) => {
-    if (mf && !l.relevant) return false;
+    if (mfOnly.checked && !l.relevant) return false;
+    if (hideMessaged.checked && l.messaged) return false;
     if (!query) return true;
     return (
       l.name.toLowerCase().includes(query) ||
-      l.title.toLowerCase().includes(query) ||
-      l.company.toLowerCase().includes(query) ||
-      l.location.toLowerCase().includes(query)
+      (l.title || "").toLowerCase().includes(query) ||
+      (l.company || "").toLowerCase().includes(query) ||
+      (l.location || "").toLowerCase().includes(query)
     );
   });
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function setStatus(msg, type) {
-  statusEl.textContent = msg;
-  statusEl.className = type;
+function setLeadsStatus(msg, type) {
+  leadsStatus.textContent = msg;
+  leadsStatus.className = type;
 }
+
+// ── Bot tab ───────────────────────────────────────────────────────────────────
+
+const startBotBtn = document.getElementById("startBotBtn");
+const stopBotBtn = document.getElementById("stopBotBtn");
+const templateInput = document.getElementById("templateInput");
+const minDelayInput = document.getElementById("minDelay");
+const maxDelayInput = document.getElementById("maxDelay");
+const dailyLimitInput = document.getElementById("dailyLimit");
+const relevantOnlyCheck = document.getElementById("relevantOnly");
+const botIndicator = document.getElementById("botIndicator");
+const botStatusVal = document.getElementById("botStatusVal");
+const botSentToday = document.getElementById("botSentToday");
+const botTotalSent = document.getElementById("botTotalSent");
+const botStatusText = document.getElementById("botStatusText");
+const logBox = document.getElementById("logBox");
+
+// Load persisted settings
+chrome.storage.local.get(["botSettings", "botState"], ({ botSettings, botState }) => {
+  if (botSettings) {
+    templateInput.value = botSettings.template || templateInput.value;
+    minDelayInput.value = botSettings.minDelay ?? 2;
+    maxDelayInput.value = botSettings.maxDelay ?? 5;
+    dailyLimitInput.value = botSettings.dailyLimit ?? 20;
+    relevantOnlyCheck.checked = botSettings.relevantOnly ?? true;
+  }
+  if (botState) applyBotState(botState);
+});
+
+// Live updates via storage changes (works even when SW is in background)
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  if (changes.botState) applyBotState(changes.botState.newValue || {});
+  if (changes.leads) {
+    allLeads = changes.leads.newValue || [];
+    renderLeads();
+  }
+});
+
+startBotBtn.addEventListener("click", () => {
+  const minD = parseFloat(minDelayInput.value) || 2;
+  const maxD = parseFloat(maxDelayInput.value) || 5;
+  if (minD >= maxD) {
+    alert("Min delay must be less than max delay.");
+    return;
+  }
+  const template = templateInput.value.trim();
+  if (!template) {
+    alert("Message template cannot be empty.");
+    return;
+  }
+  const settings = {
+    template,
+    minDelay: minD,
+    maxDelay: maxD,
+    dailyLimit: parseInt(dailyLimitInput.value) || 20,
+    relevantOnly: relevantOnlyCheck.checked,
+  };
+  chrome.runtime.sendMessage({ action: "startBot", settings });
+});
+
+stopBotBtn.addEventListener("click", () => {
+  chrome.runtime.sendMessage({ action: "stopBot" });
+});
+
+function applyBotState(state) {
+  const running = !!state.running;
+
+  botIndicator.className = "indicator " + (running ? "running" : "stopped");
+  botStatusVal.textContent = running ? "Running" : "Idle";
+  botSentToday.textContent = state.todaySent ?? 0;
+  botTotalSent.textContent = state.totalSent ?? 0;
+  botStatusText.textContent = state.status || (running ? "Bot is running…" : "Configure template below and click Start.");
+
+  startBotBtn.disabled = running;
+  stopBotBtn.disabled = !running;
+
+  if (Array.isArray(state.log) && state.log.length) {
+    logBox.innerHTML = state.log
+      .map((entry) => {
+        const cls = entry.includes("✓ Sent") ? "sent" : entry.includes("✗ Skipped") ? "skipped" : "";
+        return `<div class="log-entry ${cls}">${escapeHtml(entry)}</div>`;
+      })
+      .join("");
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function escapeHtml(str) {
   if (!str) return "";
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function csvEscape(val) {
-  if (!val) return '""';
-  return `"${String(val).replace(/"/g, '""')}"`;
-}
-
-function datestamp() {
-  return new Date().toISOString().slice(0, 10);
+  return `"${String(val || "").replace(/"/g, '""')}"`;
 }

@@ -16,161 +16,141 @@
     }
 
     header {
-      padding: 14px 16px 10px;
+      padding: 12px 16px 8px;
       background: #1e293b;
       border-bottom: 1px solid #334155;
+      flex-shrink: 0;
     }
 
-    .brand {
-      font-size: 15px;
-      font-weight: 700;
-      color: #38bdf8;
-      letter-spacing: 0.3px;
-      margin-bottom: 2px;
+    .brand { font-size: 14px; font-weight: 700; color: #38bdf8; }
+    .tagline { font-size: 10px; color: #64748b; margin-top: 1px; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      flex-shrink: 0;
     }
 
-    .tagline {
-      font-size: 11px;
+    .tab {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
       color: #64748b;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      user-select: none;
     }
 
+    .tab.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+    .tab:hover:not(.active) { color: #94a3b8; }
+
+    .tab-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .tab-panel.active { display: flex; }
+
+    /* ── Leads tab ── */
     .controls {
-      padding: 10px 16px;
+      padding: 8px 12px;
       background: #1e293b;
       border-bottom: 1px solid #334155;
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .btn {
-      padding: 7px 14px;
+      padding: 6px 12px;
       border: none;
       border-radius: 6px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
       white-space: nowrap;
     }
 
-    .btn-primary {
-      background: #0284c7;
-      color: #fff;
-    }
+    .btn-primary { background: #0284c7; color: #fff; }
     .btn-primary:hover { background: #0369a1; }
     .btn-primary:disabled { background: #1e3a5f; color: #475569; cursor: not-allowed; }
 
-    .btn-outline {
-      background: transparent;
-      border: 1px solid #334155;
-      color: #94a3b8;
-    }
+    .btn-outline { background: transparent; border: 1px solid #334155; color: #94a3b8; }
     .btn-outline:hover { border-color: #64748b; color: #e2e8f0; }
     .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .btn-danger {
-      background: transparent;
-      border: 1px solid #ef4444;
-      color: #ef4444;
-    }
+    .btn-danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
     .btn-danger:hover { background: #450a0a; }
 
-    .search-wrap {
-      flex: 1;
-      min-width: 120px;
-    }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-success:hover { background: #15803d; }
+    .btn-success:disabled { background: #14532d; color: #475569; cursor: not-allowed; }
 
+    .btn-stop { background: #dc2626; color: #fff; }
+    .btn-stop:hover { background: #b91c1c; }
+
+    .search-wrap { flex: 1; min-width: 100px; }
     .search-wrap input {
       width: 100%;
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 6px;
       color: #e2e8f0;
-      font-size: 12px;
-      padding: 6px 10px;
+      font-size: 11px;
+      padding: 6px 8px;
       outline: none;
     }
     .search-wrap input:focus { border-color: #38bdf8; }
     .search-wrap input::placeholder { color: #475569; }
 
     .filter-row {
-      padding: 8px 16px;
+      padding: 6px 12px;
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       background: #0f172a;
       border-bottom: 1px solid #1e293b;
-    }
-
-    .filter-row label {
       font-size: 11px;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
+      flex-shrink: 0;
     }
 
-    .filter-row input[type="checkbox"] {
-      accent-color: #38bdf8;
-      cursor: pointer;
-    }
+    .filter-row label { color: #64748b; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .filter-row input[type="checkbox"] { accent-color: #38bdf8; cursor: pointer; }
+    .stats { margin-left: auto; color: #475569; font-size: 10px; }
 
-    .stats {
-      font-size: 11px;
-      color: #64748b;
-      margin-left: auto;
-    }
-
-    #status {
-      padding: 6px 16px;
+    #leadsStatus {
+      padding: 4px 12px;
       font-size: 11px;
       color: #94a3b8;
       background: #0f172a;
-      min-height: 26px;
+      min-height: 22px;
       border-bottom: 1px solid #1e293b;
+      flex-shrink: 0;
     }
+    #leadsStatus.error { color: #f87171; }
+    #leadsStatus.success { color: #4ade80; }
 
-    #status.error { color: #f87171; }
-    #status.success { color: #4ade80; }
-
-    .leads-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0;
-    }
+    .leads-container { flex: 1; overflow-y: auto; }
 
     .empty-state {
       text-align: center;
-      padding: 60px 24px;
+      padding: 48px 20px;
       color: #475569;
     }
-
-    .empty-state .icon {
-      font-size: 36px;
-      margin-bottom: 12px;
-    }
-
-    .empty-state p {
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .empty-state .hint {
-      font-size: 11px;
-      color: #334155;
-      margin-top: 8px;
-    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
+    .empty-state p { font-size: 12px; line-height: 1.6; }
+    .empty-state .hint { font-size: 10px; color: #334155; margin-top: 6px; }
 
     .lead-card {
-      padding: 10px 16px;
+      padding: 9px 12px;
       border-bottom: 1px solid #1e293b;
       transition: background 0.1s;
       position: relative;
     }
-
     .lead-card:hover { background: #1e293b; }
 
     .lead-card.relevant .lead-name::after {
@@ -181,91 +161,273 @@
       color: #38bdf8;
       border-radius: 3px;
       padding: 1px 4px;
-      margin-left: 6px;
+      margin-left: 5px;
       vertical-align: middle;
     }
 
-    .lead-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: #e2e8f0;
-      margin-bottom: 2px;
+    .lead-card.messaged { opacity: 0.5; }
+    .lead-card.messaged .lead-name::before {
+      content: "✓ ";
+      color: #4ade80;
+      font-size: 11px;
     }
 
-    .lead-name a {
-      color: inherit;
-      text-decoration: none;
-    }
+    .lead-name { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+    .lead-name a { color: inherit; text-decoration: none; }
     .lead-name a:hover { color: #38bdf8; }
 
-    .lead-title {
-      font-size: 11px;
-      color: #94a3b8;
-      margin-bottom: 1px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .lead-meta {
-      font-size: 11px;
-      color: #475569;
-      display: flex;
-      gap: 8px;
-      margin-top: 3px;
-    }
-
-    .lead-meta span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lead-title { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lead-meta { font-size: 10px; color: #475569; display: flex; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
 
     .delete-btn {
-      position: absolute;
-      top: 8px;
-      right: 10px;
-      background: none;
-      border: none;
-      color: #334155;
-      cursor: pointer;
-      font-size: 14px;
-      padding: 2px 4px;
-      border-radius: 3px;
-      line-height: 1;
-      opacity: 0;
+      position: absolute; top: 7px; right: 8px;
+      background: none; border: none; color: #334155; cursor: pointer;
+      font-size: 13px; padding: 1px 3px; border-radius: 3px; opacity: 0;
       transition: opacity 0.1s;
     }
     .lead-card:hover .delete-btn { opacity: 1; }
-    .delete-btn:hover { color: #ef4444; background: #1e293b; }
+    .delete-btn:hover { color: #ef4444; }
+
+    /* ── Bot tab ── */
+    .bot-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    textarea.template-input {
+      width: 100%;
+      height: 130px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 12px;
+      padding: 8px;
+      resize: vertical;
+      outline: none;
+      line-height: 1.5;
+    }
+    textarea.template-input:focus { border-color: #38bdf8; }
+
+    .hint-text {
+      font-size: 10px;
+      color: #475569;
+      margin-top: 4px;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field-group { display: flex; flex-direction: column; }
+
+    .num-input {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 12px;
+      padding: 6px 8px;
+      outline: none;
+      width: 100%;
+    }
+    .num-input:focus { border-color: #38bdf8; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .toggle-row input[type="checkbox"] { accent-color: #38bdf8; cursor: pointer; width: 14px; height: 14px; }
+
+    .bot-actions { display: flex; gap: 8px; }
+    .bot-actions .btn { flex: 1; padding: 9px; font-size: 13px; }
+
+    /* ── Bot status card ── */
+    .bot-status-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .bot-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .bot-status-label { font-size: 11px; color: #64748b; }
+    .bot-status-value { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+
+    .bot-status-text {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid #334155;
+      min-height: 16px;
+    }
+
+    .indicator {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #475569;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    .indicator.running { background: #4ade80; box-shadow: 0 0 6px #4ade8088; animation: pulse 1.5s infinite; }
+    .indicator.stopped { background: #475569; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Activity log ── */
+    .log-box {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 8px;
+      height: 140px;
+      overflow-y: auto;
+      font-size: 10px;
+      color: #64748b;
+      font-family: "SF Mono", "Fira Code", monospace;
+      line-height: 1.6;
+    }
+
+    .log-entry { white-space: pre-wrap; word-break: break-word; }
+    .log-entry.sent { color: #4ade80; }
+    .log-entry.skipped { color: #f87171; }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">CableNOI Lead Scraper</div>
-    <div class="tagline">Multifamily property owner leads from LinkedIn</div>
+    <div class="tagline">Multifamily property owner leads — scrape &amp; auto-message</div>
   </header>
 
-  <div class="controls">
-    <button class="btn btn-primary" id="scrapeBtn">Scrape This Page</button>
-    <div class="search-wrap">
-      <input type="text" id="searchInput" placeholder="Filter leads…" />
+  <div class="tabs">
+    <div class="tab active" data-tab="leads">Leads</div>
+    <div class="tab" data-tab="bot">Bot</div>
+  </div>
+
+  <!-- ── LEADS TAB ── -->
+  <div class="tab-panel active" id="tab-leads">
+    <div class="controls">
+      <button class="btn btn-primary" id="scrapeBtn">Scrape Page</button>
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Filter leads…" />
+      </div>
+      <button class="btn btn-outline" id="exportBtn" disabled>CSV</button>
+      <button class="btn btn-danger" id="clearBtn">Clear</button>
     </div>
-    <button class="btn btn-outline" id="exportBtn" disabled>Export CSV</button>
-    <button class="btn btn-danger" id="clearBtn">Clear</button>
+    <div class="filter-row">
+      <label><input type="checkbox" id="mfOnly" /> MF only</label>
+      <label><input type="checkbox" id="hideMessaged" /> Hide messaged</label>
+      <span class="stats" id="statsText">0 leads</span>
+    </div>
+    <div id="leadsStatus"></div>
+    <div class="leads-container" id="leadsContainer">
+      <div class="empty-state">
+        <div class="icon">&#128270;</div>
+        <p>Go to a LinkedIn search and click <strong>Scrape Page</strong>.</p>
+        <p class="hint">Tip: search "multifamily property owner" in LinkedIn People.</p>
+      </div>
+    </div>
   </div>
 
-  <div class="filter-row">
-    <label>
-      <input type="checkbox" id="mfOnly" />
-      Multifamily matches only
-    </label>
-    <span class="stats" id="statsText">0 leads</span>
-  </div>
+  <!-- ── BOT TAB ── -->
+  <div class="tab-panel" id="tab-bot">
+    <div class="bot-panel">
 
-  <div id="status"></div>
+      <!-- Status card -->
+      <div>
+        <div class="section-title">Bot Status</div>
+        <div class="bot-status-card">
+          <div class="bot-status-row">
+            <span class="bot-status-label"><span class="indicator stopped" id="botIndicator"></span>Status</span>
+            <span class="bot-status-value" id="botStatusVal">Idle</span>
+          </div>
+          <div class="bot-status-row">
+            <span class="bot-status-label">Sent today</span>
+            <span class="bot-status-value" id="botSentToday">0</span>
+          </div>
+          <div class="bot-status-row">
+            <span class="bot-status-label">Total sent</span>
+            <span class="bot-status-value" id="botTotalSent">0</span>
+          </div>
+          <div class="bot-status-text" id="botStatusText">Configure template below and click Start.</div>
+        </div>
+      </div>
 
-  <div class="leads-container" id="leadsContainer">
-    <div class="empty-state">
-      <div class="icon">&#128270;</div>
-      <p>Navigate to a LinkedIn search, profile, or company page and click <strong>Scrape This Page</strong>.</p>
-      <p class="hint">Tip: Run a LinkedIn People search filtered by title (e.g. "property owner") for best results.</p>
+      <!-- Bot controls -->
+      <div class="bot-actions">
+        <button class="btn btn-success" id="startBotBtn">&#9654; Start Bot</button>
+        <button class="btn btn-stop" id="stopBotBtn" disabled>&#9632; Stop</button>
+      </div>
+
+      <!-- Template -->
+      <div>
+        <label class="field-label">Message Template</label>
+        <textarea class="template-input" id="templateInput">Hi {{name}}, I came across your work in multifamily real estate and wanted to reach out. I work with CableNOI — we help apartment owners boost their NOI through bulk cable &amp; internet agreements at no cost to you. Would love to connect and see if there's an opportunity for your portfolio.</textarea>
+        <p class="hint-text">Variables: <code>{{name}}</code> <code>{{fullname}}</code> <code>{{company}}</code> <code>{{title}}</code></p>
+      </div>
+
+      <!-- Delay & limit -->
+      <div class="two-col">
+        <div class="field-group">
+          <label class="field-label">Min delay (min)</label>
+          <input class="num-input" type="number" id="minDelay" min="1" max="60" value="2" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Max delay (min)</label>
+          <input class="num-input" type="number" id="maxDelay" min="1" max="60" value="5" />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Daily message limit</label>
+        <input class="num-input" type="number" id="dailyLimit" min="1" max="100" value="20" />
+      </div>
+
+      <div class="toggle-row">
+        <input type="checkbox" id="relevantOnly" checked />
+        <label for="relevantOnly">Only message MF-tagged leads</label>
+      </div>
+
+      <!-- Activity log -->
+      <div>
+        <div class="section-title">Activity Log</div>
+        <div class="log-box" id="logBox">
+          <div class="log-entry">Bot not started.</div>
+        </div>
+      </div>
+
     </div>
   </div>
 

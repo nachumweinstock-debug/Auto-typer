@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "CableNOI Lead Scraper",
-  "version": "1.0",
-  "description": "Scrapes LinkedIn for multifamily property owner leads and surfaces them in a side panel.",
-  "permissions": ["sidePanel", "storage", "tabs", "activeTab", "scripting"],
+  "version": "2.0",
+  "description": "Scrapes LinkedIn for multifamily property owner leads and auto-messages them from the background.",
+  "permissions": ["sidePanel", "storage", "tabs", "activeTab", "scripting", "offscreen", "alarms"],
   "host_permissions": ["https://www.linkedin.com/*"],
   "background": {
     "service_worker": "background.js"
