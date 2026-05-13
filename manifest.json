@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Human Typer",
-  "version": "2.0",
-  "description": "Types your text into any field, simulating human-like keystrokes. With AI humanizer.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "name": "CableNOI Leads",
+  "version": "1.0",
+  "description": "LinkedIn Auto-Scraper for multifamily real estate leads",
+  "permissions": ["activeTab", "scripting", "storage", "tabs", "downloads"],
   "host_permissions": [
-    "https://api.anthropic.com/*"
+    "https://www.linkedin.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -15,9 +15,12 @@
       "128": "icon.png"
     }
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://www.linkedin.com/search/results/people/*"],
       "js": ["content.js"]
     }
   ]

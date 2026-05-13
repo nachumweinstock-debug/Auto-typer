@@ -2,243 +2,274 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Human Typer</title>
+  <title>CableNOI Leads</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      width: 340px;
+      width: 380px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #1a1a2e;
-      color: #e0e0e0;
-      padding: 16px;
+      font-size: 13px;
+      background: #fff;
+      color: #1e293b;
     }
 
+    /* ── Header ─────────────────────────────────────────── */
     .header {
+      background: #0f172a;
+      padding: 14px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+    }
+    .header h1 { color: #fff; font-size: 16px; font-weight: 700; }
+    .header .subtitle { color: #94a3b8; font-size: 11px; margin-top: 2px; }
+    .badges { display: flex; gap: 6px; align-items: center; }
+    .badge-hot {
+      background: #f97316; color: #fff;
+      padding: 3px 9px; border-radius: 12px;
+      font-size: 11px; font-weight: 700;
+    }
+    .badge-total {
+      background: #334155; color: #cbd5e1;
+      padding: 3px 9px; border-radius: 12px;
+      font-size: 11px; font-weight: 600;
     }
 
-    h2 {
-      font-size: 15px;
-      font-weight: 700;
-      color: #a78bfa;
-      letter-spacing: 0.4px;
-    }
-
-    .gear-btn {
-      background: none;
-      border: none;
-      color: #555580;
-      font-size: 16px;
-      cursor: pointer;
-      padding: 2px 4px;
-      border-radius: 4px;
-      width: auto;
-      margin: 0;
-      transition: color 0.2s;
-    }
-    .gear-btn:hover { color: #a78bfa; background: none; }
-
-    textarea {
-      width: 100%;
-      height: 110px;
-      background: #16213e;
-      border: 1px solid #2d2d5e;
-      border-radius: 8px;
-      color: #e0e0e0;
-      font-size: 13px;
-      padding: 10px;
-      resize: vertical;
-      outline: none;
-      line-height: 1.5;
-    }
-    textarea:focus { border-color: #a78bfa; }
-    textarea::placeholder { color: #444465; }
-
-    .humanize-btn {
-      width: 100%;
-      margin-top: 8px;
-      padding: 8px;
-      border: 1px solid #7c3aed;
-      border-radius: 8px;
-      background: transparent;
-      color: #a78bfa;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .humanize-btn:hover { background: #2a1a4e; }
-    .humanize-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .divider {
-      border: none;
-      border-top: 1px solid #2d2d5e;
-      margin: 12px 0;
-    }
-
-    .row {
+    /* ── Tabs ────────────────────────────────────────────── */
+    .tabs {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      border-bottom: 1px solid #e2e8f0;
     }
-
-    label {
-      font-size: 12px;
-      color: #9090b0;
-      white-space: nowrap;
-    }
-
-    input[type="range"] {
-      flex: 1;
-      accent-color: #a78bfa;
-      cursor: pointer;
-    }
-
-    #speedVal {
-      font-size: 12px;
-      color: #a78bfa;
-      min-width: 32px;
-      text-align: right;
-    }
-
-    .check-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .check-row label { cursor: pointer; }
-
-    input[type="checkbox"] {
-      accent-color: #a78bfa;
-      cursor: pointer;
-      width: 14px;
-      height: 14px;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      background: #a78bfa;
-      color: #1a1a2e;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover { background: #c4b5fd; }
-    button:disabled { background: #444465; cursor: not-allowed; }
-
-    #stopBtn {
-      background: #f87171;
-      margin-top: 6px;
-      display: none;
-    }
-    #stopBtn:hover { background: #fca5a5; }
-
-    #status {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #9090b0;
+    .tab {
+      flex: 1; padding: 9px 0;
       text-align: center;
-      min-height: 16px;
+      font-size: 12px; font-weight: 600;
+      color: #64748b; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .tab:hover:not(.active) { color: #1e40af; }
+
+    /* ── Panels ──────────────────────────────────────────── */
+    .panel { display: none; padding: 12px 14px; }
+    .panel.active { display: block; }
+
+    /* ── Status bar ──────────────────────────────────────── */
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
+      background: #f8fafc; border-radius: 6px;
+      margin-bottom: 10px; font-size: 12px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #94a3b8; flex-shrink: 0;
+    }
+    .status-dot.running { background: #22c55e; }
+    .status-text { flex: 1; color: #475569; }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    .btn-start, .btn-stop {
+      width: 100%; padding: 9px;
+      border: none; border-radius: 6px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; margin-bottom: 10px;
+      transition: background 0.15s;
+    }
+    .btn-start { background: #2563eb; color: #fff; }
+    .btn-start:hover { background: #1d4ed8; }
+    .btn-stop { background: #ef4444; color: #fff; }
+    .btn-stop:hover { background: #dc2626; }
+
+    /* ── Stats grid ──────────────────────────────────────── */
+    .stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px; background: #e2e8f0;
+      border: 1px solid #e2e8f0; border-radius: 6px;
+      overflow: hidden; margin-bottom: 10px;
+    }
+    .stat-cell { background: #fff; padding: 7px 10px; }
+    .stat-label {
+      color: #94a3b8; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .stat-value { color: #1e293b; font-weight: 600; font-size: 13px; margin-top: 2px; }
+    .stat-progress { background: #fff; padding: 7px 10px; grid-column: span 2; }
+    .progress-bg {
+      background: #e2e8f0; border-radius: 4px;
+      height: 6px; overflow: hidden; margin-top: 4px;
+    }
+    .progress-fill {
+      background: #2563eb; height: 100%;
+      border-radius: 4px; transition: width 0.3s;
     }
 
-    /* Settings panel */
-    #settingsPanel {
-      display: none;
-      margin-top: 12px;
-      padding: 12px;
-      background: #16213e;
-      border: 1px solid #2d2d5e;
-      border-radius: 8px;
+    /* ── Query list ──────────────────────────────────────── */
+    .queries-header {
+      font-size: 10px; font-weight: 700;
+      color: #94a3b8; letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 6px; margin-top: 2px;
     }
-
-    #settingsPanel.open { display: block; }
-
-    .settings-label {
-      font-size: 11px;
-      color: #9090b0;
-      margin-bottom: 5px;
-      display: block;
+    .query-list { max-height: 200px; overflow-y: auto; }
+    .query-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 8px; border-radius: 5px;
+      font-size: 12px; color: #475569;
     }
-
-    .api-row {
-      display: flex;
-      gap: 6px;
+    .query-item.active { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+    .query-item.done { color: #94a3b8; }
+    .query-name { flex: 1; }
+    .query-page-badge {
+      font-size: 10px; font-weight: 600;
+      color: #2563eb; background: #dbeafe;
+      padding: 1px 6px; border-radius: 8px;
     }
+    .query-check { color: #22c55e; font-size: 13px; }
 
-    #apiKey {
-      flex: 1;
-      background: #1a1a2e;
-      border: 1px solid #2d2d5e;
-      border-radius: 6px;
-      color: #e0e0e0;
-      font-size: 12px;
-      padding: 6px 8px;
-      outline: none;
+    /* ── Leads panel ─────────────────────────────────────── */
+    .leads-scroll { max-height: 280px; overflow-y: auto; margin-bottom: 8px; }
+    .lead-item {
+      display: flex; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid #f1f5f9;
     }
-    #apiKey:focus { border-color: #a78bfa; }
-    #apiKey::placeholder { color: #444465; }
+    .lead-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: #e2e8f0; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600;
+      color: #64748b; flex-shrink: 0;
+    }
+    .lead-info { flex: 1; min-width: 0; }
+    .lead-name {
+      font-weight: 600; color: #1e293b; font-size: 12px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .lead-sub {
+      color: #64748b; font-size: 11px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lead-loc { color: #94a3b8; font-size: 11px; }
+    .hot-badge {
+      font-size: 10px; background: #fff7ed;
+      color: #ea580c; padding: 1px 5px;
+      border-radius: 8px; font-weight: 700; flex-shrink: 0;
+    }
+    .empty-state {
+      color: #94a3b8; text-align: center;
+      padding: 28px 0; font-size: 12px; line-height: 1.7;
+    }
+    .btn-export {
+      width: 100%; padding: 8px;
+      background: #fff; color: #2563eb;
+      border: 1px solid #2563eb; border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .btn-export:hover { background: #eff6ff; }
 
-    #saveApiBtn {
-      padding: 6px 12px;
-      font-size: 12px;
-      margin: 0;
-      border-radius: 6px;
-      width: auto;
+    /* ── Debug panel ─────────────────────────────────────── */
+    .debug-log {
+      background: #0f172a; color: #94a3b8;
+      border-radius: 6px; padding: 10px;
+      font-family: monospace; font-size: 11px;
+      height: 180px; overflow-y: auto;
+      white-space: pre-wrap; margin-bottom: 10px;
     }
+    .debug-log .info { color: #60a5fa; }
+    .debug-log .success { color: #4ade80; }
+    .debug-log .warn { color: #fb923c; }
+    .debug-log .error { color: #f87171; }
 
-    .settings-hint {
-      font-size: 10px;
-      color: #444465;
-      margin-top: 6px;
+    .debug-label {
+      font-size: 11px; color: #64748b; margin-bottom: 4px;
     }
+    .query-editor {
+      width: 100%; height: 80px;
+      border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 8px; font-size: 11px; color: #475569;
+      resize: none; outline: none; margin-bottom: 6px;
+    }
+    .query-editor:focus { border-color: #2563eb; }
+    .debug-actions { display: flex; gap: 6px; }
+    .btn-sm {
+      padding: 5px 12px; font-size: 11px; font-weight: 600;
+      border-radius: 5px; cursor: pointer; border: none;
+    }
+    .btn-blue { background: #2563eb; color: #fff; }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-gray { background: #e2e8f0; color: #475569; }
+    .btn-gray:hover { background: #cbd5e1; }
   </style>
 </head>
 <body>
+
   <div class="header">
-    <h2>Human Typer</h2>
-    <button class="gear-btn" id="gearBtn" title="Settings">&#9881;</button>
-  </div>
-
-  <textarea id="textInput" placeholder="Paste your text here..."></textarea>
-
-  <button class="humanize-btn" id="humanizeBtn">Humanize with AI</button>
-
-  <hr class="divider" />
-
-  <div class="row">
-    <label>Speed (WPM)</label>
-    <input type="range" id="speed" min="20" max="200" value="80" />
-    <span id="speedVal">80</span>
-  </div>
-
-  <div class="check-row">
-    <input type="checkbox" id="typos" checked />
-    <label for="typos">Simulate typos &amp; corrections</label>
-  </div>
-
-  <button id="startBtn">&#9654; Start Typing</button>
-  <button id="stopBtn">&#9632; Stop</button>
-
-  <div id="status"></div>
-
-  <!-- Settings panel -->
-  <div id="settingsPanel">
-    <span class="settings-label">Claude API Key (for AI Humanizer)</span>
-    <div class="api-row">
-      <input type="password" id="apiKey" placeholder="sk-ant-..." />
-      <button id="saveApiBtn">Save</button>
+    <div>
+      <h1>CableNOI Leads</h1>
+      <div class="subtitle">LinkedIn Auto-Scraper</div>
     </div>
-    <p class="settings-hint">Get a key at console.anthropic.com — stored locally in your browser.</p>
+    <div class="badges">
+      <span class="badge-hot" id="hotCount">0 HOT</span>
+      <span class="badge-total" id="totalCount">0 total</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="autorun">Auto-Run</div>
+    <div class="tab" data-tab="leads">Leads</div>
+    <div class="tab" data-tab="debug">Debug</div>
+  </div>
+
+  <!-- Auto-Run -->
+  <div class="panel active" id="panel-autorun">
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text" id="statusText">Idle — ready to run</div>
+    </div>
+
+    <button class="btn-start" id="startBtn">&#9654; Start Auto-Run</button>
+    <button class="btn-stop" id="stopBtn" style="display:none">&#9632; Stop</button>
+
+    <div class="stats" id="statsGrid" style="display:none">
+      <div class="stat-cell">
+        <div class="stat-label">Search</div>
+        <div class="stat-value" id="statSearch">—</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Page</div>
+        <div class="stat-value" id="statPage">—</div>
+      </div>
+      <div class="stat-cell stat-progress">
+        <div class="stat-label">Progress</div>
+        <div class="progress-bg">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="queries-header" id="queriesHeader">15 SEARCH QUERIES</div>
+    <div class="query-list" id="queryList"></div>
+  </div>
+
+  <!-- Leads -->
+  <div class="panel" id="panel-leads">
+    <div class="leads-scroll" id="leadsList"></div>
+    <button class="btn-export" id="exportBtn">&#8659; Export CSV</button>
+  </div>
+
+  <!-- Debug -->
+  <div class="panel" id="panel-debug">
+    <div class="debug-log" id="debugLog"></div>
+    <div class="debug-label">Search queries (one per line):</div>
+    <textarea class="query-editor" id="queryEditor"></textarea>
+    <div class="debug-actions">
+      <button class="btn-sm btn-blue" id="saveQueriesBtn">Save Queries</button>
+      <button class="btn-sm btn-gray" id="clearLeadsBtn">Clear Leads</button>
+    </div>
   </div>
 
   <script src="popup.js"></script>
