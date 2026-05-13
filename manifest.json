@@ -1,24 +1,34 @@
 {
   "manifest_version": 3,
-  "name": "Human Typer",
+  "name": "CableNOI Lead Scraper",
   "version": "2.0",
-  "description": "Types your text into any field, simulating human-like keystrokes. With AI humanizer.",
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": [
-    "https://api.anthropic.com/*"
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icon.png",
-      "48": "icon.png",
-      "128": "icon.png"
-    }
+  "description": "Scrapes LinkedIn for multifamily property owner leads and auto-messages them from the background.",
+  "permissions": ["sidePanel", "storage", "tabs", "activeTab", "scripting", "offscreen", "alarms"],
+  "host_permissions": ["https://www.linkedin.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
-  ]
+  ],
+  "action": {
+    "default_title": "CableNOI Lead Scraper",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }
