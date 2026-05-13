@@ -4,7 +4,7 @@
   "version": "2.0",
   "description": "Scrapes LinkedIn for multifamily property owner leads and auto-messages them from the background.",
   "permissions": ["sidePanel", "storage", "tabs", "activeTab", "scripting", "offscreen", "alarms"],
-  "host_permissions": ["https://www.linkedin.com/*", "https://api.anthropic.com/*"],
+  "host_permissions": ["https://www.linkedin.com/*"],
   "background": {
     "service_worker": "background.js"
   },

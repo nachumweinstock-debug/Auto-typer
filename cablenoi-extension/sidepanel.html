@@ -281,8 +281,6 @@
       min-height: 16px;
     }
 
-    #aiFields, #templateSection { transition: opacity 0.2s; }
-    #aiFields.hidden, #templateSection.hidden { display: none; }
 
     .indicator {
       display: inline-block;
@@ -397,25 +395,19 @@
       <!-- AI Settings -->
       <div>
         <div class="section-title">AI Message Generation</div>
-        <div class="toggle-row" style="margin-bottom:8px">
-          <input type="checkbox" id="useAI" checked />
-          <label for="useAI">Generate personalized messages with Claude AI</label>
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:9px 11px;font-size:11px;color:#94a3b8;line-height:1.6;margin-bottom:8px">
+          Uses <strong style="color:#38bdf8">Chrome's built-in Gemini Nano</strong> — runs locally, no API key, no cost.<br>
+          One-time setup: go to <code style="color:#a78bfa">chrome://flags</code> → enable <em>Prompt API for Gemini Nano</em> → relaunch Chrome.<br>
+          If unavailable, falls back to the smart template below automatically.
         </div>
-        <div id="aiFields">
-          <label class="field-label">Claude API Key</label>
-          <div style="display:flex;gap:6px;margin-bottom:5px">
-            <input type="password" class="num-input" id="claudeApiKey" placeholder="sk-ant-api03-…" style="flex:1" />
-          </div>
-          <p class="hint-text" style="margin-bottom:8px">Get a key at <strong>console.anthropic.com</strong> — stored locally, never sent anywhere but Anthropic.</p>
-          <label class="field-label">AI Instructions (system prompt)</label>
-          <textarea class="template-input" id="aiInstructions" style="height:80px">You write short, personalized LinkedIn outreach messages for CableNOI. We help multifamily apartment owners increase their NOI through bulk cable & internet agreements at zero cost to them. Messages must be under 120 words, conversational, reference the person's role/company, and end with a clear but soft call to action. Never say "I hope this finds you well."</textarea>
-        </div>
+        <label class="field-label">AI Instructions (customize the pitch)</label>
+        <textarea class="template-input" id="aiInstructions" style="height:80px">You write short, personalized LinkedIn outreach messages for CableNOI. We help multifamily apartment owners increase their NOI through bulk cable & internet agreements — zero cost to them. Under 120 words, conversational, reference the person's role and company. Never say "I hope this finds you well."</textarea>
       </div>
 
-      <!-- Fallback Template -->
-      <div id="templateSection">
-        <label class="field-label">Fallback Template <span style="color:#475569;font-weight:400">(used when no API key)</span></label>
-        <textarea class="template-input" id="templateInput">Hi {{name}}, I came across your work in multifamily real estate and wanted to reach out. I work with CableNOI — we help apartment owners boost their NOI through bulk cable &amp; internet agreements at no cost to you. Would love to connect and see if there's an opportunity for your portfolio.</textarea>
+      <!-- Smart Template Fallback -->
+      <div>
+        <label class="field-label">Smart Template <span style="color:#475569;font-weight:400">(fallback when AI unavailable)</span></label>
+        <textarea class="template-input" id="templateInput" style="height:90px">Hi {{name}}, I came across your work in multifamily real estate and wanted to reach out. I work with CableNOI — we help apartment owners boost their NOI through bulk cable &amp; internet agreements at no cost to you. Would love to connect and see if there's an opportunity for your portfolio.</textarea>
         <p class="hint-text">Variables: <code>{{name}}</code> <code>{{fullname}}</code> <code>{{company}}</code> <code>{{title}}</code></p>
       </div>
 

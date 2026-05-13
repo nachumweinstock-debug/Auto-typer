@@ -39,15 +39,13 @@ async function patchBotState(patch) {
 
 async function getBotSettings() {
   const defaults = {
-    template:
-      "Hi {{name}}, I came across your work in multifamily real estate and wanted to reach out. I work with CableNOI — we help apartment owners boost their NOI through bulk cable & internet agreements at no cost to you. Would love to connect and see if there's an opportunity for your portfolio.",
+    template: "",
     minDelay: 2,
     maxDelay: 5,
     dailyLimit: 20,
     relevantOnly: true,
-    useAI: true,
-    claudeApiKey: "",
-    aiInstructions: "You write short, personalized LinkedIn outreach messages for CableNOI. We help multifamily apartment owners increase their NOI through bulk cable & internet agreements at zero cost to them. Messages must be under 120 words, conversational, reference the person's role/company, and end with a clear but soft call to action. Never say \"I hope this finds you well.\"",
+    aiInstructions:
+      "You write short, personalized LinkedIn outreach messages for CableNOI. We help multifamily apartment owners increase their NOI through bulk cable & internet agreements — zero cost to them. Under 120 words, conversational, reference the person's role and company. Never say \"I hope this finds you well.\"",
   };
   const { botSettings = defaults } = await chrome.storage.local.get("botSettings");
   return { ...defaults, ...botSettings };
@@ -58,58 +56,84 @@ function addLog(state, entry) {
   return [`[${new Date().toLocaleTimeString()}] ${entry}`, ...log].slice(0, 60);
 }
 
-// ── AI message generation ─────────────────────────────────────────────────────
+// ── Chrome built-in AI + smart template fallback ─────────────────────────────
 
-async function generateMessage(lead, settings) {
-  const apiKey = settings.claudeApiKey;
-  const useAI = settings.useAI;
-
-  if (!useAI || !apiKey) {
-    return fillTemplate(settings.template, lead);
-  }
-
+// Injected into the LinkedIn tab (MAIN world) so it can access window.ai / LanguageModel
+async function chromeAIGenerate(lead, systemPrompt) {
   const first = (lead.name || "").split(" ")[0] || "there";
   const userPrompt = [
-    `Write a LinkedIn outreach message to ${lead.name}`,
+    `Write a LinkedIn outreach message to ${lead.name || "this person"}`,
     lead.title ? `who is a ${lead.title}` : "",
     lead.company ? `at ${lead.company}` : "",
-    lead.location ? `based in ${lead.location}` : "",
-    `Start the message with "Hi ${first},"`,
+    lead.location ? `in ${lead.location}` : "",
+    `Begin the message with "Hi ${first},"`,
   ].filter(Boolean).join(", ") + ".";
 
   try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 300,
-        system: settings.aiInstructions || "You write short LinkedIn outreach messages for CableNOI.",
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-    });
+    // Chrome 127+: window.LanguageModel (newer spec) or window.ai.languageModel (older)
+    const api =
+      (typeof LanguageModel !== "undefined" && LanguageModel) ||
+      (window.ai?.languageModel) ||
+      null;
 
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${resp.status}`);
-    }
+    if (!api) return null;
 
-    const data = await resp.json();
-    return data.content?.[0]?.text?.trim() || fillTemplate(settings.template, lead);
-  } catch (err) {
-    console.warn("AI generation failed, using template:", err.message);
-    return fillTemplate(settings.template, lead);
+    const caps = await api.capabilities();
+    if (caps.available === "no") return null;
+
+    const session = await api.create({ systemPrompt });
+    const text = await session.prompt(userPrompt);
+    session.destroy();
+    return text?.trim() || null;
+  } catch {
+    return null;
   }
 }
 
-// ── Template fill ─────────────────────────────────────────────────────────────
+// Smart personalized template — no AI needed, reads their profile to vary the copy
+function smartTemplate(lead) {
+  const first = (lead.name || "").split(" ")[0] || "there";
+  const t = (lead.title || "").toLowerCase();
+  const company = lead.company ? ` at ${lead.company}` : "";
+
+  let hook;
+  if (t.includes("owner") || t.includes("investor") || t.includes("principal")) {
+    hook = `as a real estate investor you know how much NOI drives portfolio value`;
+  } else if (t.includes("develop")) {
+    hook = `with your development background you understand how NOI shapes a deal's entire cap rate`;
+  } else if (t.includes("manag")) {
+    hook = `with your property management experience you know what actually moves the needle on NOI`;
+  } else if (t.includes("acqui") || t.includes("asset")) {
+    hook = `given your acquisitions focus you know that incremental NOI goes straight to valuation`;
+  } else {
+    hook = `I came across your work in multifamily real estate`;
+  }
+
+  return `Hi ${first}, ${hook}${company}. I work with CableNOI — we partner with apartment owners to add NOI through bulk cable & internet agreements at zero cost to them. We handle everything and you collect the check. Would love to connect and see if there's a fit for your portfolio.`;
+}
+
+async function generateMessage(tabId, lead, settings) {
+  await patchBotState({ status: `Generating message for ${lead.name}…` });
+
+  // Try Chrome's built-in Gemini Nano first (runs in the tab's MAIN world)
+  try {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: chromeAIGenerate,
+      args: [lead, settings.aiInstructions || ""],
+    });
+    if (result?.result) return result.result;
+  } catch {}
+
+  // Fall back to smart template or user template
+  const tpl = settings.template;
+  if (tpl?.includes("{{")) return fillTemplate(tpl, lead);
+  return smartTemplate(lead);
+}
 
 function fillTemplate(template, lead) {
-  if (!lead || !template) return template || "";
+  if (!lead || !template) return smartTemplate(lead);
   const first = (lead.name || "").split(" ")[0] || "there";
   return template
     .replace(/\{\{name\}\}/gi, first)
@@ -149,8 +173,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   await sleep(3000);
 
   const settings = await getBotSettings();
-  await patchBotState({ status: `Generating message for ${state.currentLead?.name}…` });
-  const message = await generateMessage(state.currentLead, settings);
+  const message = await generateMessage(tabId, state.currentLead, settings);
 
   try {
     await chrome.tabs.sendMessage(tabId, { action: "automateMessage", message });
