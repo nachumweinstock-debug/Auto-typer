@@ -1,179 +1,267 @@
-let typingActive = false;
+// ══════════════════════════════════════════════════════════════════════════════
+// CableNOI — content script
+// Runs on all linkedin.com pages. Handles scraping AND messaging automation.
+// ══════════════════════════════════════════════════════════════════════════════
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ── Scraper: keyword list ─────────────────────────────────────────────────────
 
-const nearbyKeys = {
-  a:"sqwz", b:"vghn", c:"xdfv", d:"serfcx", e:"wsdr",
-  f:"drtgvc", g:"ftyhn", h:"gyujnb", i:"ujko", j:"huikmn",
-  k:"jiolm", l:"kop", m:"njk", n:"bhjm", o:"iklp",
-  p:"ol", q:"wa", r:"edft", s:"aqwedxz", t:"rfgy",
-  u:"yhji", v:"cfgb", w:"qase", x:"zsdc", y:"tugh",
-  z:"asx", " ":"cvbnm",
-};
+const MULTIFAMILY_KEYWORDS = [
+  "multifamily", "multi-family", "multi family",
+  "apartment", "apartments", "residential",
+  "property owner", "property investor", "real estate investor",
+  "real estate owner", "building owner", "landlord",
+  "reit", "asset management", "portfolio manager",
+  "real estate", "realty", "housing",
+  "cre", "commercial real estate",
+  "acquisition", "acquisitions", "acquisitions manager",
+  "developer", "real estate developer", "development",
+  "property management", "property manager",
+  "syndication", "syndicator",
+];
 
-function getNearbyKey(ch) {
-  const lower = ch.toLowerCase();
-  const pool = nearbyKeys[lower];
-  if (!pool) return ch;
-  const typo = pool[Math.floor(Math.random() * pool.length)];
-  return ch === ch.toUpperCase() ? typo.toUpperCase() : typo;
+function matchesKeywords(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return MULTIFAMILY_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const rand  = (min, max) => Math.random() * (max - min) + min;
+// ── Scraper: page scrapers ────────────────────────────────────────────────────
 
-// ─── Google Docs ─────────────────────────────────────────────────────────────
+function scrapeSearchResults() {
+  const leads = [];
+  const cards = document.querySelectorAll(
+    "li.reusable-search__result-container, li[class*='search-result']"
+  );
 
-function isGoogleDocs() {
-  return location.hostname === "docs.google.com";
+  cards.forEach((card) => {
+    const nameEl = card.querySelector(
+      "span[aria-hidden='true'], .entity-result__title-text a span[aria-hidden='true']"
+    );
+    const name = nameEl?.textContent?.trim() || "";
+    if (!name) return;
+
+    const title = card.querySelector(
+      ".entity-result__primary-subtitle, [class*='primary-subtitle']"
+    )?.textContent?.trim() || "";
+
+    const company = card.querySelector(
+      ".entity-result__secondary-subtitle, [class*='secondary-subtitle']"
+    )?.textContent?.trim() || "";
+
+    const location = card.querySelector(
+      ".entity-result__tertiary-subtitle, [class*='tertiary-subtitle']"
+    )?.textContent?.trim() || "";
+
+    const linkEl = card.querySelector("a.app-aware-link, a[href*='/in/'], a[href*='/company/']");
+    const profileUrl = linkEl?.href?.split("?")[0] || "";
+
+    const snippet = card.querySelector(".entity-result__summary")?.textContent?.trim() || "";
+    const relevant = matchesKeywords(title) || matchesKeywords(company) || matchesKeywords(snippet);
+
+    leads.push({ name, title, company, location, profileUrl, relevant, source: "search" });
+  });
+
+  return leads;
 }
 
-function getGDocsIframe() {
-  return document.querySelector(".docs-texteventtarget-iframe");
+function scrapeProfilePage() {
+  const name = document.querySelector(
+    "h1.text-heading-xlarge, h1[class*='heading']"
+  )?.textContent?.trim() || "";
+  if (!name) return [];
+
+  const title = document.querySelector(
+    ".text-body-medium.break-words"
+  )?.textContent?.trim() || "";
+
+  const location = document.querySelector(
+    ".text-body-small.inline.t-black--light.break-words"
+  )?.textContent?.trim() || "";
+
+  const company = document.querySelector(
+    "[data-field='experience_company_logo'] .hoverable-link-text, .pv-text-details__right-panel .hoverable-link-text"
+  )?.textContent?.trim() || "";
+
+  const profileUrl = window.location.href.split("?")[0];
+  const relevant = matchesKeywords(title) || matchesKeywords(company);
+  return [{ name, title, company, location, profileUrl, relevant, source: "profile" }];
 }
 
-function typeCharGDocs(iframe, char) {
-  const doc = iframe.contentDocument;
-  if (!doc) return false;
+function scrapeCompanyPage() {
+  const name = document.querySelector(
+    "h1.org-top-card-summary__title"
+  )?.textContent?.trim() || "";
+  if (!name) return [];
 
-  // Refocus the iframe so execCommand targets it
-  iframe.contentWindow.focus();
+  const items = document.querySelectorAll(".org-top-card-summary-info-list__info-item");
+  const industry = items[0]?.textContent?.trim() || "";
+  const location = items[2]?.textContent?.trim() || "";
+  const profileUrl = window.location.href.split("?")[0];
+  const relevant = matchesKeywords(industry) || matchesKeywords(name);
 
-  if (char === "\n") {
-    return doc.execCommand("insertParagraph", false);
-  }
-  return doc.execCommand("insertText", false, char);
+  return [{ name, title: industry, company: name, location, profileUrl, relevant, source: "company" }];
 }
 
-function deleteCharGDocs(iframe) {
-  const doc = iframe.contentDocument;
-  if (!doc) return;
-  iframe.contentWindow.focus();
-  doc.execCommand("delete");
+function detectPageType() {
+  const url = window.location.href;
+  if (url.includes("/search/results/")) return "search";
+  if (url.includes("/in/")) return "profile";
+  if (url.includes("/company/")) return "company";
+  return "unknown";
 }
 
-// ─── Regular inputs / contenteditable ────────────────────────────────────────
-
-function typeChar(el, char) {
-  if (el.isContentEditable) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    const node = document.createTextNode(char);
-    range.insertNode(node);
-    range.setStartAfter(node);
-    range.setEndAfter(node);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  } else {
-    const s = el.selectionStart;
-    el.value = el.value.slice(0, s) + char + el.value.slice(el.selectionEnd);
-    el.selectionStart = el.selectionEnd = s + 1;
-  }
-  el.dispatchEvent(new InputEvent("input", { bubbles: true, data: char, inputType: "insertText" }));
+function mergeLeads(existing, incoming) {
+  const seen = new Set(existing.map((l) => l.profileUrl || l.name));
+  return [...existing, ...incoming.filter((l) => !seen.has(l.profileUrl || l.name))];
 }
 
-function deleteChar(el) {
-  if (el.isContentEditable) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    if (range.startOffset > 0) {
-      range.setStart(range.startContainer, range.startOffset - 1);
-      range.deleteContents();
-    }
-  } else {
-    const s = el.selectionStart;
-    if (s > 0) {
-      el.value = el.value.slice(0, s - 1) + el.value.slice(s);
-      el.selectionStart = el.selectionEnd = s - 1;
-    }
-  }
-  el.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }));
-}
+function scrape() {
+  const pageType = detectPageType();
+  chrome.runtime.sendMessage({ action: "scrapeProgress", text: `Scraping ${pageType} page…` });
 
-// ─── Main typing loop ─────────────────────────────────────────────────────────
-
-async function humanType(text, wpm, useTypos) {
-  typingActive = true;
-
-  const gdocs  = isGoogleDocs();
-  const iframe = gdocs ? getGDocsIframe() : null;
-  const target = gdocs ? null : (lastFocused || document.activeElement);
-
-  // Validate target for non-GDocs pages
-  if (!gdocs && (!target || (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && !target.isContentEditable))) {
-    chrome.runtime.sendMessage({ action: "typingError", error: "Click inside a text field first." });
-    typingActive = false;
+  let leads = [];
+  if (pageType === "search") leads = scrapeSearchResults();
+  else if (pageType === "profile") leads = scrapeProfilePage();
+  else if (pageType === "company") leads = scrapeCompanyPage();
+  else {
+    chrome.runtime.sendMessage({
+      action: "scrapeError",
+      error: "Navigate to a LinkedIn search, profile, or company page first.",
+    });
     return;
   }
 
-  if (!gdocs) target.focus();
-
-  const baseDelay = (60 / (wpm * 5)) * 1000; // ms per character
-
-  for (let i = 0; i < text.length; i++) {
-    if (!typingActive) break;
-
-    const ch = text[i];
-    const delay = rand(baseDelay * 0.55, baseDelay * 1.5);
-
-    // Random "thinking" pause
-    if (Math.random() < 0.015) await sleep(rand(400, 1200));
-
-    // Punctuation pause
-    if (".!?".includes(ch))   await sleep(rand(180, 500));
-    else if (",;:".includes(ch)) await sleep(rand(60, 180));
-
-    // Typo simulation (4% on letters)
-    if (useTypos && /[a-zA-Z]/.test(ch) && Math.random() < 0.04) {
-      const wrong = getNearbyKey(ch);
-      if (gdocs) typeCharGDocs(iframe, wrong);
-      else       typeChar(target, wrong);
-      await sleep(rand(80, 200));
-      await sleep(rand(100, 350));
-      if (gdocs) deleteCharGDocs(iframe);
-      else       deleteChar(target);
-      await sleep(rand(50, 150));
-    }
-
-    if (gdocs) typeCharGDocs(iframe, ch);
-    else       typeChar(target, ch);
-
-    await sleep(delay);
+  if (leads.length === 0) {
+    chrome.runtime.sendMessage({
+      action: "scrapeError",
+      error: "No leads found. Try scrolling to load more results first.",
+    });
+    return;
   }
 
-  typingActive = false;
-  chrome.runtime.sendMessage({ action: "typingDone" });
+  chrome.storage.local.get("leads", ({ leads: existing = [] }) => {
+    const merged = mergeLeads(existing, leads);
+    chrome.storage.local.set({ leads: merged }, () => {
+      chrome.runtime.sendMessage({ action: "leadsScraped", leads: merged });
+    });
+  });
 }
 
-// ─── Focus tracking ───────────────────────────────────────────────────────────
+// ── Messaging automation ──────────────────────────────────────────────────────
 
-let lastFocused = null;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-document.addEventListener("focusin", (e) => {
-  const el = e.target;
-  if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable) {
-    lastFocused = el;
+function findButtonByText(text) {
+  for (const btn of document.querySelectorAll("button")) {
+    if (btn.textContent.trim().toLowerCase().includes(text.toLowerCase())) return btn;
   }
-}, true);
+  return null;
+}
 
-// Also track clicks for Google Docs (clicks don't always fire focusin)
-document.addEventListener("mousedown", () => {
-  if (isGoogleDocs()) {
-    // The iframe re-focuses on click; cursor position is preserved internally.
-    // Nothing extra needed — getGDocsIframe() will be used at type time.
+async function waitForEl(selectors, timeout = 10000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el) return el;
+    }
+    await sleep(400);
   }
-}, true);
+  return null;
+}
 
-// ─── Message listener ─────────────────────────────────────────────────────────
-
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.action === "startTyping") {
-    humanType(msg.text, msg.wpm, msg.typos);
+async function typeInto(el, text) {
+  el.focus();
+  await sleep(200);
+  for (const ch of text) {
+    const delay = 35 + Math.random() * 90;
+    if (el.isContentEditable) {
+      document.execCommand("insertText", false, ch);
+    } else {
+      const s = el.selectionStart ?? el.value.length;
+      el.value = el.value.slice(0, s) + ch + el.value.slice(s);
+      el.selectionStart = el.selectionEnd = s + 1;
+    }
+    el.dispatchEvent(new InputEvent("input", { bubbles: true, data: ch, inputType: "insertText" }));
+    await sleep(delay);
   }
-  if (msg.action === "stopTyping") {
-    typingActive = false;
+}
+
+async function automateMessage(messageText) {
+  // 1. Find the Message button
+  const msgBtn =
+    document.querySelector('button[aria-label*="Message"]') ||
+    document.querySelector('button[aria-label*="message"]') ||
+    findButtonByText("Message");
+
+  if (!msgBtn) {
+    return { success: false, error: "Message button not found — may need to connect first" };
+  }
+
+  msgBtn.click();
+  await sleep(1200);
+
+  // 2. Wait for message compose box (LinkedIn uses contenteditable div)
+  const composeBox = await waitForEl([
+    ".msg-form__contenteditable",
+    "div.msg-form__contenteditable[contenteditable='true']",
+    "div[data-placeholder][contenteditable='true']",
+    "div[role='textbox'][contenteditable='true']",
+    "div[contenteditable='true'].msg-form__contenteditable",
+  ], 10000);
+
+  if (!composeBox) {
+    return { success: false, error: "Message compose box did not open" };
+  }
+
+  await sleep(400);
+  composeBox.click();
+  await sleep(300);
+
+  // 3. Type the message with human-like pacing
+  await typeInto(composeBox, messageText);
+
+  // Random thinking pause before hitting send
+  await sleep(800 + Math.random() * 1200);
+
+  // 4. Find and click Send
+  const sendBtn =
+    document.querySelector(".msg-form__send-button") ||
+    document.querySelector("button[data-control-name='send_message']") ||
+    findButtonByText("Send");
+
+  if (!sendBtn) {
+    return { success: false, error: "Send button not found" };
+  }
+
+  sendBtn.click();
+  await sleep(1000);
+
+  // 5. Verify message area cleared (indicates send succeeded)
+  const cleared = !composeBox.textContent?.trim();
+  if (!cleared) {
+    // Fallback: try keyboard shortcut
+    composeBox.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }));
+    await sleep(800);
+  }
+
+  return { success: true };
+}
+
+// ── Message listener ──────────────────────────────────────────────────────────
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.action === "scrape") {
+    scrape();
+    sendResponse({});
+    return;
+  }
+
+  if (msg.action === "automateMessage") {
+    automateMessage(msg.message).then((result) => {
+      chrome.runtime.sendMessage({ action: "messagingResult", ...result });
+    });
+    sendResponse({});
+    return;
   }
 });
